@@ -616,7 +616,7 @@ static void demodulate(uint8_t rx_bits[], float rx_sd[], complex float fsk_in[])
     /* Figure out how much to spin the oscillator to extract magic spectral line */
     complex float dphift = cmplx(TAU * ((float) fsk_Rs / (float) (fsk_P * fsk_Rs)));
     complex float phi_ft = cmplx(0.0f);
-    complex float t_c = cmplx(0.0f);
+    complex float t_c = 0.0f;
 
     for (i = 0; i < ((fsk_Nsym + 1) * fsk_P); i++) {
         /* Get abs^2 of fx_int[i], and add 'em */
@@ -627,7 +627,7 @@ static void demodulate(uint8_t rx_bits[], float rx_sd[], complex float fsk_in[])
         }
 
         /* Down shift and accumulate magic line */
-        t_c = t_c + (ft1 * phi_ft);
+        t_c += (ft1 * phi_ft);
 
         /* Spin the oscillator for the magic line shift */
         phi_ft = phi_ft * dphift;
