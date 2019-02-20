@@ -39,7 +39,7 @@ int main() {
         for (j = 0; j < CYCLES; j++) {
             // 50% modulation
 
-            word[j] = (short) (crealf(baseband[j]) * 16384.0) & 0xFFFF;
+            word[j] = (short) ((crealf(baseband[j]) * 32767.0) / 2.0);
         }
 
         fwrite(word, sizeof (short), CYCLES, fout);
