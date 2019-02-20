@@ -6,7 +6,7 @@ The KISS FFT has been highly modified to use the C99 complex syntax instead of a
 I also added in the "real" forward, and inverse KISS FFT functions that are also converted to the complex syntax. 
 
 #### Build Instructions
-First copy the ```libfsk.so``` and ```libhorus_api.so``` files to ```/usr/local/lib```
+First copy the ```libfsk.so``` and ```libhorus_api.so``` files to ```/usr/local/lib``` Make sure the permissions are set correctly (666).
 ```
 sudo cp libfsk.so /usr/local/lib
 sudo cp libhorus_api.so /usr/local/lib
