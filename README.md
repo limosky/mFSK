@@ -1,15 +1,9 @@
 ### mFSK Modem
-A 2FSK and 4FSK Modem based on the Horus FSK Modem designed by David Rowe and Brady O'Brien.
+A 2FSK and 4FSK Modem based on the Horus FSK Modem designed by David Rowe and Brady O'Brien. I have changed things around a bit, by using a Dynamic Library for the fsk and horus API's. I'm using the Netbeans IDE and have included the export so you can import and compile any changes. You can also just burst the ZIP's (for example on a Raspberry Pi) and type ```make``` for each of the packages.
 
-I'm using the Netbeans IDE and have included the export so you can import and compile any changes.
+The KISS FFT has been highly modified to use the C99 complex syntax instead of all the macros and artificial complex structure. I'd like to replace that with a DFT/IDFT. FFT is kind of an over-kill.
 
-You can also just burst the ZIP (for example on a Raspberry Pi) and type ```make```.
-
-The KISS FFT has been highly modified to use the C99 complex syntax instead of all the macros and artificial complex structure.
-
-I also added in the real forward, and inverse KISS FFT functions that are also converted to complex syntax. This real part is untested so far.
-
-I have changed things around a bit, by using a dynamic library for the fsk and horus api's. 
+I also added in the "real" forward, and inverse KISS FFT functions that are also converted to the complex syntax. 
 
 #### Build Instructions
 First copy the ```libfsk.so``` and ```libhorus_api.so``` files to ```/usr/local/lib```
@@ -76,9 +70,7 @@ $ ./horus_demod -m binary -c /tmp/horus-test.raw -
 ```
 
 #### Examples using Audacity
-Included is a couple of PNG graphics from the modulator tests, and the resulting RAW audio samples.
-
-The audio samples are 16-bit signed PCM, little-endian, at an 8000 sample rate.
+Included is a couple of PNG graphics from the modulator tests, and the resulting RAW audio samples. The audio samples are 16-bit signed PCM, little-endian, at an 8000 sample rate.
 
 The test signal has an F1 frequency of 1100 Hz, a shift frequency of 200 Hz, and a symbol rate of 100 Baud.
 
