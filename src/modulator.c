@@ -29,7 +29,6 @@ static float mod_rs;
 static float mod_f1;
 static float mod_shift;
 static int mod_mode;
-static int mod_mode;
 static int mod_cycles;
 
 int mod_create(int mode, int sample_rate, int symbol_rate, int first_freq, int shift) {
