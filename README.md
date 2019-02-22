@@ -1,7 +1,7 @@
 ### mFSK Modem
 A 2FSK and 4FSK Modem based on the Horus FSK Modem designed by David Rowe and Brady O'Brien. I have changed things around a bit, by using a Dynamic Library for the fsk and horus API's. I'm using the Netbeans IDE and have included the export so you can import and compile any changes. You can also just burst the ZIP's (for example on a Raspberry Pi) and type ```make``` for each of the packages.
 
-The KISS FFT has been highly modified to use the C99 complex syntax instead of all the macros and artificial complex structure. I'd like to replace that with a DFT/IDFT. FFT is kind of an over-kill.
+The KISS FFT has been highly modified to use the C99 complex syntax instead of all the macros and artificial complex structure.
 
 I also added in the "real" forward, and inverse KISS FFT functions that are also converted to the complex syntax. 
 
@@ -85,7 +85,107 @@ In 4FSK this results in a 00-bits producing 1100 Hz, 01-bits producing 1300 Hz, 
 Just for kicks I added a Manchester Modulator option. I don't have a demodulator, but I was interested in seeing what the spectrum looked like.
 
 #### Project Development
-Currently the modem compiles without error, and the modulator/demodulator seems to work.
+Currently the modem compiles without error, and the modulator/demodulator seems to work. I am converting it to use internal data structures rather than static BSS storage. So maybe the docs have strange things that don't add up.
 
 There is a little testing program I used to make sure the CRC, Scrambler, and Interleaver actually work. It showed that they produced the right data, and they were bidirectional.
 
+#### Library Calls
+In order to use the FSK library, the following functions are available, and the internal data structure is shown in structures:
+```
+struct FSK {
+    complex float phase[MAX_TONES];
+    float f_est[MAX_TONES];
+    float norm_rx_timing;
+    float EbNodB;
+    float ppm;
+    int Ndft;
+    int Fs;
+    int N;
+    int Rs;
+    int Ts;
+    int Nmem;
+    int P;
+    int Nsym;
+    int Nbits;
+    int f1;
+    int shift;
+    int mode;
+    int est_min;
+    int est_max;
+    int est_space;
+    int nstash;
+    int nin;
+    bool burst_mode;
+    fft_cfg fftcfg;
+    float *hann_table;
+    float *fft_est;
+    complex float *samp_old;
+};
+
+struct MODULATE {
+    complex float oscillator[MAX_TONES];
+    complex float phase;
+    float fs;
+    float rs;
+    float f1;
+    float shift;
+    int mode;
+    int cycles;
+};
+
+struct STATS {
+    fft_cfg fftcfg;
+    float snr_est; /* estimated SNR of rx signal in dB (3 kHz noise BW) */
+    float foff; /* estimated freq offset in Hz */
+    float rx_timing; /* estimated optimum timing offset in samples */
+    float clock_offset; /* Estimated tx/rx sample clock offset in ppm */
+    float scale_dB;
+    float fftbuffer[STATS_FFTSIZE];
+};
+```
+#### Stats
+```
+struct STATS *stats_open(void);
+void stats_close(struct STATS *);
+void stats_spectrum(struct STATS *, float [], complex float [], int);
+
+float stats_get_snr_est(struct STATS *);
+float stats_get_foff(struct STATS *);
+float stats_get_rx_timing(struct STATS *);
+float stats_get_clock_offset(struct STATS *);
+
+float *stats_get_fft_buf_ptr(struct STATS *);
+
+void stats_set_snr_est(struct STATS *, float);
+void stats_set_foff(struct STATS *, float);
+void stats_set_rx_timing(struct STATS *, float);
+void stats_set_clock_offset(struct STATS *, float);
+```
+#### Fsk
+```
+struct FSK *fsk_create(int, int, int, int);
+struct FSK *fsk_create_hbr(int, int, int, int, int, int);
+void fsk_destroy(struct FSK *);
+
+int fsk_get_nin(struct FSK *);
+int fsk_get_N(struct FSK *);
+int fsk_get_Nmem(struct FSK *);
+int fsk_get_Nbits(struct FSK *);
+int fsk_get_Ts(struct FSK *);
+float fsk_get_f_est(struct FSK *, int);
+void fsk_set_nsym(struct FSK *, int);
+void fsk_set_est_limits(struct FSK *, int, int);
+void fsk_set_estimators(struct FSK *);
+```
+#### Modulate
+```
+struct MODULATE *mod_create(int, int, int, int, int);
+void mod_destroy(struct MODULATE *);
+void modulate(struct MODULATE *, complex float [], int);
+void manchester_modulate(struct MODULATE *, complex float [], int);
+```
+#### Demodulate
+```
+void fsk_demod(struct FSK *, uint8_t [], complex float []);
+void fsk_demod_sd(struct FSK *, float [], complex float []);
+```
