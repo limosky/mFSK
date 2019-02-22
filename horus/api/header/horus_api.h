@@ -106,7 +106,7 @@ int horus_get_max_packet_len(void);
 /**
  * In-Place Algebraic Golden Prime Interleaver
  * 
- * inout  - The data to be operated on
+ * inout  - The byte data to be operated on
  * nbytes - The number of data bytes in the input/output
  * dir    - Direction is 0 to Interleave and 1 to De-Interleave
  */

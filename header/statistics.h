@@ -17,30 +17,37 @@ extern "C" {
 
 #include <complex.h>
 
-#include "modulator.h"
-#include "demodulator.h"
+#include "fsk.h"
 #include "fft.h"
 
 #define STATS_FFTSIZE   1024
 #define ASCALE  ((STATS_FFTSIZE / 2) * 1000)
 
-int stats_open(void);
-void stats_close(void);
-void stats_spectrum(float [], complex float [], int);
+struct STATS {
+    fft_cfg fftcfg;
+    float snr_est; /* estimated SNR of rx signal in dB (3 kHz noise BW) */
+    float foff; /* estimated freq offset in Hz */
+    float rx_timing; /* estimated optimum timing offset in samples */
+    float clock_offset; /* Estimated tx/rx sample clock offset in ppm */
+    float scale_dB;
+    float fftbuffer[STATS_FFTSIZE];
+};
 
-float stats_get_snr_est(void);
-float stats_get_foff(void);
-float stats_get_rx_timing(void);
-float stats_get_clock_offset(void);
-float stats_get_f_est(int);
+struct STATS *stats_open(void);
+void stats_close(struct STATS *);
+void stats_spectrum(struct STATS *, float [], complex float [], int);
 
-float *stats_get_fft_buf_ptr(void);
+float stats_get_snr_est(struct STATS *);
+float stats_get_foff(struct STATS *);
+float stats_get_rx_timing(struct STATS *);
+float stats_get_clock_offset(struct STATS *);
 
-void stats_set_snr_est(float);
-void stats_set_foff(float);
-void stats_set_rx_timing(float);
-void stats_set_clock_offset(float);
-void stats_set_f_est(int, float);
+float *stats_get_fft_buf_ptr(struct STATS *);
+
+void stats_set_snr_est(struct STATS *, float);
+void stats_set_foff(struct STATS *, float);
+void stats_set_rx_timing(struct STATS *, float);
+void stats_set_clock_offset(struct STATS *, float);
 
 #ifdef __cplusplus
 }

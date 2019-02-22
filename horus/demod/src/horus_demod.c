@@ -13,6 +13,7 @@
 #include <string.h>
 #include <getopt.h>
 
+#include "fsk.h"
 #include "demodulator.h"
 #include "horus_api.h"
 
@@ -24,12 +25,16 @@ static struct option long_opts[] = {
 };
 
 int main(int argc, char *argv[]) {
-    struct horus *hstates;
+    struct STATS *stats;
     FILE *fin = NULL, *fout = NULL;
     int i, j, Ndft, mode;
     int stats_ctr, stats_loop, stats_rate, verbose, crc_results;
     float loop_time;
     int enable_stats = 0;
+
+    if ((stats = stats_open()) == NULL) {
+        return 0;
+    }
 
     stats_loop = 0;
     stats_rate = 8;
@@ -149,9 +154,11 @@ helpmsg:
 
     /* Main loop ----------------------------------------------------------------------- */
 
-    while (fread(demod_in, sizeof (short), horus_get_nin(), fin) == horus_get_nin()) {
+    int nin = horus_get_nin();
+
+    while (fread(demod_in, sizeof (short), nin, fin) == nin) {
         if (verbose) {
-            fprintf(stderr, "read nin %d\n", horus_get_nin());
+            fprintf(stderr, "read nin %d\n", nin);
         }
 
         if (horus_rx(ascii_out, demod_in)) {
@@ -173,14 +180,7 @@ helpmsg:
 
             /* Print standard 2FSK stats */
 
-            fprintf(stderr, "{\"EbNodB\": %2.2f,\t\"ppm\": %d,", stats_get_snr_est(), (int) stats_get_clock_offset());
-            fprintf(stderr, "\t\"f1_est\":%.1f,\t\"f2_est\":%.1f", stats_get_f_est(0), stats_get_f_est(1));
-
-            /* Print 4FSK stats if in 4FSK mode */
-
-            if (horus_get_mFSK() == MODE_4FSK) {
-                fprintf(stderr, ",\t\"f3_est\":%.1f,\t\"f4_est\":%.1f", stats_get_f_est(2), stats_get_f_est(3));
-            }
+            fprintf(stderr, "{\"EbNodB\": %2.2f,\t\"ppm\": %d,", stats_get_snr_est(stats), (int) stats_get_clock_offset(stats));
 
             stats_ctr = stats_loop;
         }
@@ -191,6 +191,8 @@ helpmsg:
             fflush(fin);
             fflush(fout);
         }
+
+        nin = horus_get_nin();
     }
 
     horus_close();

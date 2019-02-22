@@ -14,34 +14,23 @@
 #include <complex.h>
 #include <math.h>
 
-#include "demodulator.h"
 #include "modulator.h"
 
-#define cmplx(value) (cosf(value) + sinf(value) * I)
-#define cmplxconj(value) (cosf(value) + sinf(value) * -I)
-
-/* BSS memory */
-
-static complex float mod_oscillator[MAX_TONES];
-static complex float mod_phase;
-static float mod_fs;
-static float mod_rs;
-static float mod_f1;
-static float mod_shift;
-static int mod_mode;
-static int mod_mode;
-static int mod_cycles;
-
-int mod_create(int mode, int sample_rate, int symbol_rate, int first_freq, int shift) {
+struct MODULATE *mod_create(int mode, int sample_rate, int symbol_rate, int first_freq, int shift) {
+    struct MODULATE *mod;
     float tone;
     int i;
 
-    mod_mode = mode;
-    mod_fs = (float) sample_rate; /* the audio sample rate Fs */
-    mod_rs = (float) symbol_rate; /* the audio symbol rate Rs */
-    mod_f1 = (float) first_freq; /* frequency of first tone */
-    mod_shift = (float) shift; /* tone separation */
-    mod_cycles = (sample_rate / symbol_rate); /* resulting number of sample cycles */
+    if ((mod = (struct MODULATE *) malloc(sizeof (struct MODULATE))) == NULL) {
+        return NULL;
+    }
+
+    mod->mode = mode;
+    mod->fs = (float) sample_rate; /* the audio sample rate Fs */
+    mod->rs = (float) symbol_rate; /* the audio symbol rate Rs */
+    mod->f1 = (float) first_freq; /* frequency of first tone */
+    mod->shift = (float) shift; /* tone separation */
+    mod->cycles = (sample_rate / symbol_rate); /* resulting number of sample cycles */
 
     /* Check for calling parameter errors */
 
@@ -51,29 +40,30 @@ int mod_create(int mode, int sample_rate, int symbol_rate, int first_freq, int s
 
     /* Initialize the FSK oscillators */
 
-    for (i = 0, tone = mod_f1; i < mod_mode; i++, tone += mod_shift) {
-        mod_oscillator[i] = cmplx(TAU * (tone / mod_fs));
+    for (i = 0, tone = mod->f1; i < mod->mode; i++, tone += mod->shift) {
+        mod->oscillator[i] = cmplx(TAU * (tone / mod->fs));
     }
 
     /* Initialize modulator phase */
 
-    mod_phase = cmplx(0.0f);
+    mod->phase = cmplx(0.0f);
 
-    return 1;
+    return mod;
 }
 
 /* Nothing yet */
-void mod_destroy() {
+void mod_destroy(struct MODULATE *mod) {
+    free(mod);
 }
 
-void modulate(complex float baseband[], int bits) {
+void modulate(struct MODULATE *mod, complex float baseband[], int bits) {
     int i, tone;
 
     /* limit the bit parameter for safety */
 
-    if (mod_mode == MODE_2FSK) {
+    if (mod->mode == MODE_2FSK) {
         tone = bits & 0x1;
-    } else if (mod_mode == MODE_4FSK) {
+    } else if (mod->mode == MODE_4FSK) {
         tone = bits & 0x3;
     }
 
@@ -81,13 +71,13 @@ void modulate(complex float baseband[], int bits) {
      * Grab one cycle of continuous phase
      * from the selected oscillator
      */
-    for (i = 0; i < mod_cycles; i++) {
-        mod_phase = mod_phase * mod_oscillator[tone];
-        baseband[i] = mod_phase;
+    for (i = 0; i < mod->cycles; i++) {
+        mod->phase = mod->phase * mod->oscillator[tone];
+        baseband[i] = mod->phase;
     }
 
     /* Normalize phase */
-    mod_phase = mod_phase / cabsf(mod_phase);
+    mod->phase = mod->phase / cabsf(mod->phase);
 }
 
 /*
@@ -96,25 +86,25 @@ void modulate(complex float baseband[], int bits) {
  * 
  * There is no demodulator for it yet.
  */
-void manchester_modulate(complex float baseband[], int bit) {
+void manchester_modulate(struct MODULATE *mod, complex float baseband[], int bit) {
     int i;
 
     /* limit the bit parameter for safety */
 
     if ((bit & 0x1) == 0) {
-        for (i = 0; i < (mod_cycles / 2); i++) {
+        for (i = 0; i < (mod->cycles / 2); i++) {
             baseband[i] = -1.0f;
         }
 
-        for (i = (mod_cycles / 2); i < mod_cycles; i++) {
+        for (i = (mod->cycles / 2); i < mod->cycles; i++) {
             baseband[i] = 1.0f;
         }
     } else {
-        for (i = 0; i < (mod_cycles / 2); i++) {
+        for (i = 0; i < (mod->cycles / 2); i++) {
             baseband[i] = 1.0f;
         }
 
-        for (i = (mod_cycles / 2); i < mod_cycles; i++) {
+        for (i = (mod->cycles / 2); i < mod->cycles; i++) {
             baseband[i] = -1.0f;
         }
     }

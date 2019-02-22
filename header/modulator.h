@@ -16,11 +16,24 @@ extern "C" {
 #endif
 
 #include <complex.h>
-    
-int mod_create(int, int, int, int, int);
-void mod_destroy(void);
-void modulate(complex float [], int);
-void manchester_modulate(complex float [], int);
+
+#include "fsk.h"
+
+struct MODULATE {
+    complex float oscillator[MAX_TONES];
+    complex float phase;
+    float fs;
+    float rs;
+    float f1;
+    float shift;
+    int mode;
+    int cycles;
+};
+
+struct MODULATE *mod_create(int, int, int, int, int);
+void mod_destroy(struct MODULATE *);
+void modulate(struct MODULATE *, complex float [], int);
+void manchester_modulate(struct MODULATE *, complex float [], int);
 
 #ifdef __cplusplus
 }

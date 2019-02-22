@@ -17,8 +17,9 @@
 #include <stdint.h>
 #include <math.h>
 
-#include "demodulator.h"
+#include "fsk.h"
 #include "modulator.h"
+#include "demodulator.h"
 #include "golay23.h"
 #include "statistics.h"
 #include "horus_api.h"
@@ -56,6 +57,10 @@ static const uint16_t primes[] = {
 };
 
 /* BSS Memory */
+
+struct FSK *api_fsk;
+struct MODULATE *api_mod;
+struct STATS *api_stats;
 
 static int api_verbose;
 static int api_mFSK;                    /* number of FSK tones */
@@ -133,20 +138,24 @@ int horus_open(int hmode) {
 
     /* 1100 Hz FSK F1 frequency */
 
-    if (fsk_create(api_Fs, api_Rs, api_mFSK, 1100) == 0) {
+    if ((api_fsk = fsk_create(api_Fs, api_Rs, api_mFSK, 1100)) == NULL) {
         return 0;
     }
 
     /* shift frequency 2 * Rs = 200 Hz */
 
-    if (mod_create(api_mFSK, api_Fs, api_Rs, 1100, api_Rs * 2) == 0) {
+    if ((api_mod = mod_create(api_mFSK, api_Fs, api_Rs, 1100, api_Rs * 2)) == NULL) {
         return 0;
     }
-
+    
+    if ((api_stats = stats_open()) == NULL) {
+        return 0;
+    }
+    
     /* allocate enough room for two packets so we know there will be
        one complete packet if we find a UW at start */
 
-    api_rx_bits_len += fsk_get_Nbits();
+    api_rx_bits_len += fsk_get_Nbits(api_fsk);
 
     if ((api_rx_bits = (uint8_t *) malloc(api_rx_bits_len)) == NULL) {
         return 0;
@@ -165,9 +174,11 @@ int horus_open(int hmode) {
  * Close the FSK session and free memory.
  */
 void horus_close() {
-    mod_destroy();
-    fsk_destroy();
     free(api_rx_bits);
+    stats_close(api_stats);
+    mod_destroy(api_mod);
+    fsk_destroy(api_fsk);
+
 }
 
 /**
@@ -180,9 +191,9 @@ void horus_close() {
 
 int horus_rx(char data_out[], short demod_in[]) {
     int i, j, uw_loc;
-    int nin = fsk_get_nin();
+    int nin = fsk_get_nin(api_fsk);
     int packet_detected = 0;
-    int Nbits = fsk_get_Nbits();
+    int Nbits = fsk_get_Nbits(api_fsk);
 
     if (api_verbose) {
         fprintf(stderr, "max_packet_len: %d rx_bits_len: %d Nbits: %d\n",
@@ -203,7 +214,7 @@ int horus_rx(char data_out[], short demod_in[]) {
         demod_in_comp[i] = (float) demod_in[i] + 0.0f * I;
     }
 
-    fsk_demod(&api_rx_bits[api_rx_bits_len - Nbits], demod_in_comp);
+    fsk_demod(api_fsk, &api_rx_bits[api_rx_bits_len - Nbits], demod_in_comp);
 
     /* UW search to see if we can find the start of a packet in the buffer */
 
@@ -270,7 +281,7 @@ int horus_binary_tx(short demod_out[], int percent, uint8_t *payload) {
         for (j = (i * (cycles * 4)), k = 6; k >= 0; j += cycles, k -= 2) {
             dibit = (word >> k) & 0x3; /* MSB pair first */
             
-            modulate(segment, dibit);
+            modulate(api_mod, segment, dibit);
 
             for (m = 0; m < cycles; m++) {
                 demod_out[j + m] = (short) (crealf(segment[m]) * percent_modulation) & 0xFFFF;
@@ -302,11 +313,11 @@ int horus_get_mFSK() {
 }
 
 int horus_get_nin() {
-    return fsk_get_nin();
+    return fsk_get_nin(api_fsk);
 }
 
 int horus_get_max_demod_in() {
-    return fsk_get_Nmem();
+    return fsk_get_Nmem(api_fsk);
 }
 
 int horus_get_max_demod_out() {
@@ -330,17 +341,13 @@ int horus_get_max_packet_len() {
 void horus_get_stats(float *snr_est) {
     /* SNR scaled from Eb/No est returned by FSK to SNR in 3000 Hz */
 
-    *snr_est = stats_get_snr_est() + 10.0f * log10f(api_Rs / 3000.0f);
+    *snr_est = stats_get_snr_est(api_stats) + 10.0f * log10f(api_Rs / 3000.0f);
 }
 
 void horus_get_extended_stats() {
     int i;
 
-    stats_set_snr_est(stats_get_snr_est() + 10.0f * log10f(api_Rs / 3000.0f));
-
-    for (i = 0; i < api_mFSK; i++) {
-        stats_set_f_est(i, fsk_get_f_est(i));
-    }
+    stats_set_snr_est(api_stats, stats_get_snr_est(api_stats) + 10.0f * log10f(api_Rs / 3000.0f));
 }
 
 int horus_get_crc_ok() {
@@ -354,7 +361,7 @@ void horus_set_verbose(int verbose) {
 /**
  * In-Place Algebraic Golden Prime Interleaver
  * 
- * inout  - The data to be operated on
+ * inout  - The byte data to be operated on
  * nbytes - The number of data bytes in the input/output
  * dir    - Direction is 0 to Interleave and 1 to De-Interleave
  */
