@@ -16,26 +16,8 @@
 
 #include "modulator.h"
 
-<<<<<<< HEAD
 struct MODULATE *mod_create(int mode, int sample_rate, int symbol_rate, int first_freq, int shift) {
     struct MODULATE *mod;
-=======
-#define cmplx(value) (cosf(value) + sinf(value) * I)
-#define cmplxconj(value) (cosf(value) + sinf(value) * -I)
-
-/* BSS memory */
-
-static complex float mod_oscillator[MAX_TONES];
-static complex float mod_phase;
-static float mod_fs;
-static float mod_rs;
-static float mod_f1;
-static float mod_shift;
-static int mod_mode;
-static int mod_cycles;
-
-int mod_create(int mode, int sample_rate, int symbol_rate, int first_freq, int shift) {
->>>>>>> f7a9b8f7316e8d3c6fef6ca3564cac77bbb9011c
     float tone;
     int i;
 
