@@ -9,8 +9,7 @@
  * See LICENSE file for information
  */
 
-#ifndef FSK_H
-#define FSK_H
+#pragma once
 
 #ifdef __cplusplus
 extern "C" {
@@ -87,6 +86,4 @@ void fsk_set_estimators(struct FSK *);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* FSK_H */
 
