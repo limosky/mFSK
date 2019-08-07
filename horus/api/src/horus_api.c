@@ -332,7 +332,7 @@ int horus_get_max_packet_len() {
     if (api_mode == HORUS_MODE_RTTY) {
         return api_max_packet_len / 10; /* 7 bit ASCII, plus 3 sync bits */
     } else if (api_mode == HORUS_MODE_BINARY) {
-        return HORUS_BINARY_NUM_PAYLOAD_BYTES;
+        return (HORUS_BINARY_NUM_PAYLOAD_BYTES*2+1);     /* Hexadecimal encoded */;
     } else {
         return 0; /* bad news */
     }
