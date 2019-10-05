@@ -36,6 +36,7 @@
 #include <complex.h>
 
 #include "fft.h"
+#include "fsk.h"
 
 /* Static prototypes/Forward declarations */
 
@@ -79,7 +80,7 @@ fft_cfg fft_alloc(int nfft, int inverse_fft, void *mem, size_t *lenmem) {
             if (inverse_fft)
                 phase *= -1.0f;
 
-            *(st->twiddles + i) = cexpf(I * phase);
+            *(st->twiddles + i) = cmplx(phase);
         }
 
         kf_factor(nfft, st->factors);
@@ -129,7 +130,7 @@ fftr_cfg fftr_alloc(int nfft, int inverse_fft, void *mem, size_t *lenmem) {
             phase *= -1.0f;
         }
 
-        *(st->super_twiddles + i) = cexpf(I * phase);
+        *(st->super_twiddles + i) = cmplx(phase);
     }
 
     return st;

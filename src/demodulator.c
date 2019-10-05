@@ -17,6 +17,7 @@
 
 #include "fft.h"
 #include "fsk.h"
+#include "statistics.h"
 #include "demodulator.h"
 
 /* Static prototypes/Forward declarations */
@@ -71,11 +72,11 @@ static void demodulate(struct FSK *fsk, uint8_t rx_bits[], float rx_sd[], comple
     /* Initialize downmixers for each symbol tone */
     for (m = 0; m < fsk->mode; m++) {
         /* Back the stored phase off to account for re-integraton of old samples */
-        dphi[m] = cexpf(I * (-TAU * (fsk->Nmem - fsk->nin - (fsk->Ts / fsk->P)) * (freqs[m] / (float) fsk->Fs)));
+        dphi[m] = cmplx(-TAU * (fsk->Nmem - fsk->nin - (fsk->Ts / fsk->P)) * (freqs[m] / (float) fsk->Fs));
         fsk->phase[m] = fsk->phase[m] * dphi[m];
 
         /* Figure out how much to nudge each sample downmixer for every sample */
-        dphi[m] = cexpf(I * (TAU * (freqs[m] / (float) fsk->Fs)));
+        dphi[m] = cmplx(TAU * (freqs[m] / (float) fsk->Fs));
     }
 
     /* Integrate and downsample for symbol tones */
