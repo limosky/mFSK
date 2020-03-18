@@ -62,7 +62,6 @@ struct FSK {
     int nin;
     bool burst_mode;
     fft_cfg fftcfg;
-    float *hann_table;
     float *fft_est;
     complex float *samp_old;
 };

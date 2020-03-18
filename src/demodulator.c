@@ -351,7 +351,7 @@ static void frequency_estimate(struct FSK *fsk, complex float fsk_in[], float fr
 
         /* Copy FSK buffer into reals of FFT buffer and apply window */
         for (i = 0; i < fft_samps; i++) {
-            fftin[i] = fsk_in[i + fsk->Ndft * j] * fsk->hann_table[i];
+            fftin[i] = fsk_in[i + fsk->Ndft * j] * hann_table[i];
         }
 
         /* Zero out the remaining slots */
