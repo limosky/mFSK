@@ -15,6 +15,7 @@
 #define CYCLES (FS / RS)
 
 int main() {
+    struct MODULATE *mod;
     FILE *fout;
     int i, j;
 
@@ -23,7 +24,7 @@ int main() {
         return 1;
     }
 
-    if (mod_create(MODE, FS, RS, FIRST_TONE_FREQ, SHIFT_FREQ) == 0) {
+    if ((mod = mod_create(MODE, FS, RS, FIRST_TONE_FREQ, SHIFT_FREQ)) == NULL) {
         fprintf(stderr, "Unable to create modulator\n");
         return 2;
     }
@@ -34,7 +35,7 @@ int main() {
     for (i = 0; i < 512; i++) {
         int bitpair = (rand() % MODE);
 
-        modulate(baseband, bitpair);
+        modulate(mod, baseband, bitpair);
 
         for (j = 0; j < CYCLES; j++) {
             // 50% modulation
@@ -45,7 +46,7 @@ int main() {
         fwrite(word, sizeof (short), CYCLES, fout);
     }
 
-    mod_destroy();
+    mod_destroy(mod);
     fclose(fout);
 
     return 0;
