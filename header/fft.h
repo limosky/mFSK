@@ -27,7 +27,7 @@ extern "C" {
 #ifndef TAU
 #define TAU     (2.0f * M_PI)
 #endif
-
+    
 /* Complex FFT */
 
 struct fft_state {

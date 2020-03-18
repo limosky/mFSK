@@ -36,8 +36,6 @@ struct STATS *stats_open() {
     if ((stats->fftcfg = fft_alloc(STATS_FFTSIZE, 0, NULL, NULL)) == NULL) {
         return NULL;
     } else {
-        int i;
-
         stats->snr_est = 0.0f;
         stats->foff = 0.0f;
         stats->rx_timing = 0.0f;
@@ -45,7 +43,7 @@ struct STATS *stats_open() {
 
         stats->scale_dB = 20.0f * log10f(ASCALE);
 
-        for (i = 0; i < STATS_FFTSIZE; i++) {
+        for (int i = 0; i < STATS_FFTSIZE; i++) {
             stats->fftbuffer[i] = 0.0f;
         }
     }

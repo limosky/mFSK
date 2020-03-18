@@ -1,5 +1,5 @@
 /*
- * Copyright (C) January 2016 David Rowe, Brady O'Brien
+ * Copyright (C) January 2016 David Rowe
  *
  * All rights reserved.
  *
@@ -21,20 +21,9 @@
 
 static int generate_hann_table(struct FSK *);
 
-/*---------------------------------------------------------------------------*\
-
-  FUNCTION....: fsk_create
-  AUTHOR......: Brady O'Brien
-  DATE CREATED: 7 January 2016
-
-  Create and initialize an instance of the FSK modem.
-
-\*---------------------------------------------------------------------------*/
-
 struct FSK *fsk_create(int sample_rate, int symbol_rate, int mfsk, int tone_f1) {
     struct FSK *fsk;
     struct STATS *stats;
-    int i;
 
     if ((fsk = (struct FSK *) malloc(sizeof (struct FSK))) == NULL) {
         return NULL;
@@ -65,7 +54,7 @@ struct FSK *fsk_create(int sample_rate, int symbol_rate, int mfsk, int tone_f1) 
     fsk->est_space = MIN_SPACING;
 
     /* Set up rx state */
-    for (i = 0; i < mfsk; i++) {
+    for (int i = 0; i < mfsk; i++) {
         fsk->phase[i] = cmplx(0.0f);
     }
 
@@ -79,7 +68,7 @@ struct FSK *fsk_create(int sample_rate, int symbol_rate, int mfsk, int tone_f1) 
         return NULL;
     }
 
-    for (i = 0; i < fsk->nstash; i++) {
+    for (int i = 0; i < fsk->nstash; i++) {
         fsk->samp_old[i] = 0.0f;
     }
 
@@ -96,11 +85,11 @@ struct FSK *fsk_create(int sample_rate, int symbol_rate, int mfsk, int tone_f1) 
         return NULL;
     }
 
-    for (i = 0; i < (fsk->Ndft / 2); i++) {
+    for (int i = 0; i < (fsk->Ndft / 2); i++) {
         fsk->fft_est[i] = 0.0f;
     }
 
-    for (i = 0; i < mfsk; i++) {
+    for (int i = 0; i < mfsk; i++) {
         fsk->f_est[i] = 0.0f;
     }
 
@@ -119,21 +108,9 @@ struct FSK *fsk_create(int sample_rate, int symbol_rate, int mfsk, int tone_f1) 
     return fsk;
 }
 
-/*---------------------------------------------------------------------------*\
-
-  FUNCTION....: fsk_create_hbr
-  AUTHOR......: Brady O'Brien
-  DATE CREATED: 11 February 2016
-
-  Create and initialize a high bit-rate (HBR) instance of the FSK demod.
-  Returns a 1 on success, or 0 on failure
-
-\*---------------------------------------------------------------------------*/
-
 struct FSK *fsk_create_hbr(int sample_rate, int symbol_rate, int oversample_rate, int mfsk, int f1, int shift) {
     struct FSK *fsk;
     struct STATS *stats;
-    int i;
 
     if ((fsk = (struct FSK *) malloc(sizeof (struct FSK))) == NULL) {
         return NULL;
@@ -160,7 +137,7 @@ struct FSK *fsk_create_hbr(int sample_rate, int symbol_rate, int oversample_rate
 
     int dft = 0;
 
-    for (i = 1; i; i <<= 1)
+    for (int i = 1; i; i <<= 1)
         if (fsk->N & i)
             dft = i;
 
@@ -172,7 +149,7 @@ struct FSK *fsk_create_hbr(int sample_rate, int symbol_rate, int oversample_rate
 
     /* Set up rx state */
 
-    for (i = 0; i < mfsk; i++) {
+    for (int i = 0; i < mfsk; i++) {
         fsk->phase[i] = cmplx(0.0f);
     }
 
@@ -190,7 +167,7 @@ struct FSK *fsk_create_hbr(int sample_rate, int symbol_rate, int oversample_rate
         return NULL;
     }
 
-    for (i = 0; i < fsk->nstash; i++) {
+    for (int i = 0; i < fsk->nstash; i++) {
         fsk->samp_old[i] = 0.0f;
     }
 
@@ -201,11 +178,11 @@ struct FSK *fsk_create_hbr(int sample_rate, int symbol_rate, int oversample_rate
         return NULL;
     }
 
-    for (i = 0; i < (fsk->Ndft / 2); i++) {
+    for (int i = 0; i < (fsk->Ndft / 2); i++) {
         fsk->fft_est[i] = 0.0f;
     }
 
-    for (i = 0; i < mfsk; i++) {
+    for (int i = 0; i < mfsk; i++) {
         fsk->f_est[i] = 0.0f;
     }
 
@@ -260,8 +237,6 @@ void fsk_set_est_limits(struct FSK *fsk, int min, int max) {
 }
 
 void fsk_set_nsym(struct FSK *fsk, int nsyms) {
-    int i;
-
     fsk->N = fsk->Ts * nsyms;
     fsk->Nsym = nsyms;
     fsk->Nmem = fsk->N + (2 * fsk->Ts);
@@ -270,7 +245,7 @@ void fsk_set_nsym(struct FSK *fsk, int nsyms) {
 
     int dft = 0;
 
-    for (i = 1; i; i <<= 1) {
+    for (int i = 1; i; i <<= 1) {
         if ((fsk->N) & i) {
             dft = i;
         }
@@ -284,7 +259,7 @@ void fsk_set_nsym(struct FSK *fsk, int nsyms) {
     fsk->fftcfg = fft_alloc(fsk->Ndft, 0, NULL, NULL);
     fsk->fft_est = (float *) malloc(sizeof (float) * (fsk->Ndft / 2));
 
-    for (i = 0; i < (fsk->Ndft / 2); i++) {
+    for (int i = 0; i < (fsk->Ndft / 2); i++) {
         fsk->fft_est[i] = 0.0f;
     }
 }
@@ -298,10 +273,8 @@ void fsk_enable_burst_mode(struct FSK *fsk, int nsyms) {
 }
 
 void fsk_set_estimators(struct FSK *fsk) {
-    int i;
-
     /* Clear freq estimator state */
-    for (i = 0; i < (fsk->Ndft / 2); i++) {
+    for (int i = 0; i < (fsk->Ndft / 2); i++) {
         fsk->fft_est[i] = 0.0f;
     }
 
@@ -326,9 +299,8 @@ static int generate_hann_table(struct FSK *fsk) {
     } else {
         complex float dphi = cmplx(TAU / (float) (fsk->Ndft - 1));
         complex float rphi = conjf(dphi) * .5f;
-        int i;
 
-        for (i = 0; i < fsk->Ndft; i++) {
+        for (int i = 0; i < fsk->Ndft; i++) {
             rphi = rphi * dphi;
             fsk->hann_table[i] = .5f - crealf(rphi);
         }

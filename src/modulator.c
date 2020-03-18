@@ -1,5 +1,5 @@
 /*
- * Copyright (C) January 2016 David Rowe, Brady O'Brien
+ * Copyright (C) January 2016 David Rowe
  *
  * All rights reserved.
  *
@@ -24,6 +24,12 @@ struct MODULATE *mod_create(int mode, int sample_rate, int symbol_rate, int firs
     if ((mod = (struct MODULATE *) malloc(sizeof (struct MODULATE))) == NULL) {
         return NULL;
     }
+    
+    /* Check for calling parameter errors */
+
+    if ((sample_rate % symbol_rate) != 0) {
+        return NULL;
+    }
 
     mod->mode = mode;
     mod->fs = (float) sample_rate; /* the audio sample rate Fs */
@@ -31,12 +37,6 @@ struct MODULATE *mod_create(int mode, int sample_rate, int symbol_rate, int firs
     mod->f1 = (float) first_freq; /* frequency of first tone */
     mod->shift = (float) shift; /* tone separation */
     mod->cycles = (sample_rate / symbol_rate); /* resulting number of sample cycles */
-
-    /* Check for calling parameter errors */
-
-    if ((sample_rate % symbol_rate) != 0) {
-        return 0;
-    }
 
     /* Initialize the FSK oscillators */
 
@@ -57,7 +57,7 @@ void mod_destroy(struct MODULATE *mod) {
 }
 
 void modulate(struct MODULATE *mod, complex float baseband[], int bits) {
-    int i, tone;
+    int tone;
 
     /* limit the bit parameter for safety */
 
@@ -71,7 +71,7 @@ void modulate(struct MODULATE *mod, complex float baseband[], int bits) {
      * Grab one cycle of continuous phase
      * from the selected oscillator
      */
-    for (i = 0; i < mod->cycles; i++) {
+    for (int i = 0; i < mod->cycles; i++) {
         mod->phase = mod->phase * mod->oscillator[tone];
         baseband[i] = mod->phase;
     }
@@ -87,24 +87,23 @@ void modulate(struct MODULATE *mod, complex float baseband[], int bits) {
  * There is no demodulator for it yet.
  */
 void manchester_modulate(struct MODULATE *mod, complex float baseband[], int bit) {
-    int i;
 
     /* limit the bit parameter for safety */
 
     if ((bit & 0x1) == 0) {
-        for (i = 0; i < (mod->cycles / 2); i++) {
+        for (int i = 0; i < (mod->cycles / 2); i++) {
             baseband[i] = -1.0f;
         }
 
-        for (i = (mod->cycles / 2); i < mod->cycles; i++) {
+        for (int i = (mod->cycles / 2); i < mod->cycles; i++) {
             baseband[i] = 1.0f;
         }
     } else {
-        for (i = 0; i < (mod->cycles / 2); i++) {
+        for (int i = 0; i < (mod->cycles / 2); i++) {
             baseband[i] = 1.0f;
         }
 
-        for (i = (mod->cycles / 2); i < mod->cycles; i++) {
+        for (int i = (mod->cycles / 2); i < mod->cycles; i++) {
             baseband[i] = -1.0f;
         }
     }

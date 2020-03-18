@@ -1,5 +1,5 @@
 /*
- * Copyright (C) January 2016 David Rowe, Brady O'Brien
+ * Copyright (C) January 2016 David Rowe
  *
  * All rights reserved.
  *
