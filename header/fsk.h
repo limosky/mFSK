@@ -83,6 +83,8 @@ void fsk_set_nsym(struct FSK *, int);
 void fsk_set_est_limits(struct FSK *, int, int);
 void fsk_set_estimators(struct FSK *);
 
+extern const float hann_table[];
+
 #ifdef __cplusplus
 }
 #endif

@@ -8,6 +8,7 @@
  * Licensed under GNU LGPL V2.1
  * See LICENSE file for information
  */
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -18,8 +19,6 @@
 #include "demodulator.h"
 #include "statistics.h"
 #include "fft.h"
-
-static int generate_hann_table(struct FSK *);
 
 struct FSK *fsk_create(int sample_rate, int symbol_rate, int mfsk, int tone_f1) {
     struct FSK *fsk;
@@ -59,10 +58,6 @@ struct FSK *fsk_create(int sample_rate, int symbol_rate, int mfsk, int tone_f1) 
     }
 
     fsk->nstash = (fsk->Ts * 4);
-
-    if (generate_hann_table(fsk) == 0) {
-        return NULL;
-    }
 
     if ((fsk->samp_old = (complex float *) malloc(sizeof (complex float) * fsk->nstash)) == NULL) {
         return NULL;
@@ -154,10 +149,6 @@ struct FSK *fsk_create_hbr(int sample_rate, int symbol_rate, int oversample_rate
     }
 
     fsk->nstash = (fsk->Ts * 4);
-
-    if (generate_hann_table(fsk) == 0) {
-        return NULL;
-    }
 
     if ((fsk->fftcfg = fft_alloc(fsk->Ndft, 0, NULL, NULL)) == NULL) {
         return NULL;
@@ -293,18 +284,3 @@ void fsk_destroy(struct FSK *fsk) {
     free(fsk->fft_est);
 }
 
-static int generate_hann_table(struct FSK *fsk) {
-    if ((fsk->hann_table = (float *) malloc(sizeof (float) * fsk->Ndft)) == NULL) {
-        return 0;
-    } else {
-        complex float dphi = cmplx(TAU / (float) (fsk->Ndft - 1));
-        complex float rphi = conjf(dphi) * .5f;
-
-        for (int i = 0; i < fsk->Ndft; i++) {
-            rphi = rphi * dphi;
-            fsk->hann_table[i] = .5f - crealf(rphi);
-        }
-    }
-    
-    return 1;
-}
