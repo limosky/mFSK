@@ -132,5 +132,4 @@ void modulate(struct MODULATE *, complex float [], int);
 #### Demodulate
 ```
 void fsk_demod(struct FSK *, uint8_t [], complex float []);
-void fsk_demod_sd(struct FSK *, float [], complex float []);
 ```
