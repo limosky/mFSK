@@ -11,6 +11,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <complex.h>
 #include <math.h>
 
@@ -72,39 +73,10 @@ void modulate(struct MODULATE *mod, complex float baseband[], int bits) {
      * from the selected oscillator
      */
     for (int i = 0; i < mod->cycles; i++) {
-        mod->phase = mod->phase * mod->oscillator[tone];
+        mod->phase *= mod->oscillator[tone];
         baseband[i] = mod->phase;
     }
 
     /* Normalize phase */
-    mod->phase = mod->phase / cabsf(mod->phase);
-}
-
-/*
- * Manchester encoding is twice the bit frequency.
- * So we cut the Ts in half and alternate the signal.
- * 
- * There is no demodulator for it yet.
- */
-void manchester_modulate(struct MODULATE *mod, complex float baseband[], int bit) {
-
-    /* limit the bit parameter for safety */
-
-    if ((bit & 0x1) == 0) {
-        for (int i = 0; i < (mod->cycles / 2); i++) {
-            baseband[i] = -1.0f;
-        }
-
-        for (int i = (mod->cycles / 2); i < mod->cycles; i++) {
-            baseband[i] = 1.0f;
-        }
-    } else {
-        for (int i = 0; i < (mod->cycles / 2); i++) {
-            baseband[i] = 1.0f;
-        }
-
-        for (int i = (mod->cycles / 2); i < mod->cycles; i++) {
-            baseband[i] = -1.0f;
-        }
-    }
+    mod->phase /= cabsf(mod->phase);
 }

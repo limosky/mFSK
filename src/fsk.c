@@ -20,6 +20,9 @@
 #include "statistics.h"
 #include "fft.h"
 
+/*
+ *  Low Bit-Rate Mode
+ */
 struct FSK *fsk_create(int sample_rate, int symbol_rate, int mfsk, int tone_f1) {
     struct FSK *fsk;
     struct STATS *stats;
@@ -38,7 +41,14 @@ struct FSK *fsk_create(int sample_rate, int symbol_rate, int mfsk, int tone_f1) 
     fsk->Ts = sample_rate / symbol_rate;
     fsk->N = sample_rate;
     fsk->burst_mode = false;
-    fsk->P = OVERSAMPLE_RATE;
+    
+    /*
+     * P specifies the rate at which symbols are down-converted before further
+     * processing. Must be divisible by the symbol size. Smaller P values will
+     * result in faster processing but lower demodulation performance.
+     */
+    fsk->P = OVERSAMPLE_RATE;   /* Defaults to 8 */
+    
     fsk->Nsym = fsk->N / fsk->Ts;
     fsk->Ndft = FFT_SIZE;
     fsk->Nmem = fsk->N + (fsk->Ts * 2);
@@ -103,6 +113,9 @@ struct FSK *fsk_create(int sample_rate, int symbol_rate, int mfsk, int tone_f1) 
     return fsk;
 }
 
+/*
+ *  High Bit-Rate Mode
+ */
 struct FSK *fsk_create_hbr(int sample_rate, int symbol_rate, int oversample_rate, int mfsk, int f1, int shift) {
     struct FSK *fsk;
     struct STATS *stats;
@@ -122,7 +135,14 @@ struct FSK *fsk_create_hbr(int sample_rate, int symbol_rate, int oversample_rate
     fsk->burst_mode = false;
     fsk->Nsym = 48; /* Number of symbols in a processing frame */
     fsk->N = fsk->Ts * fsk->Nsym;
+    
+    /*
+     * P specifies the rate at which symbols are down-converted before further
+     * processing. Must be divisible by the symbol size. Smaller P values will
+     * result in faster processing but lower demodulation performance.
+     */
     fsk->P = oversample_rate;
+
     fsk->Nmem = fsk->N + (fsk->Ts * 2);
     fsk->f1 = f1;
     fsk->shift = shift;

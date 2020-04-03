@@ -34,22 +34,11 @@ static float normf(complex float val) {
 /* Public Functions */
 
 void fsk_demod(struct FSK *fsk, uint8_t rx_bits[], complex float fsk_in[]) {
-    demodulate(fsk, rx_bits, (float *) NULL, fsk_in);
-}
-
-void fsk_demod_sd(struct FSK *fsk, float rx_sd[], complex float fsk_in[]) {
-    demodulate(fsk, NULL, rx_sd, fsk_in);
-}
-
-/* Private Functions */
-
-static void demodulate(struct FSK *fsk, uint8_t rx_bits[], float rx_sd[], complex float fsk_in[]) {
     float freqs[fsk->mode];
     int nold = (fsk->Nmem - fsk->nin);
-    int using_old_samps;
-    size_t i, j, m, dc_i, cbuf_i;
+    bool using_old_samps;
 
-    complex float *f_int[fsk->mode]; /* Filtered and downsampled symbol tones */
+    complex float *f_int[fsk->mode]; /* Filtered and down-sampled symbol tones */
     complex float t[fsk->mode]; /* complex number temps */
     complex float dphi[fsk->mode];
     complex float *sample_src;
@@ -59,84 +48,82 @@ static void demodulate(struct FSK *fsk, uint8_t rx_bits[], float rx_sd[], comple
     frequency_estimate(fsk, fsk_in, freqs);
 
     /* allocate memory for the integrated samples */
-    for (m = 0; m < fsk->mode; m++) {
+    for (int m = 0; m < fsk->mode; m++) {
         f_int[m] = (complex float *) malloc(sizeof (complex float) * (fsk->Nsym + 1) * fsk->P);
     }
 
     if (fsk->f_est[0] < 1.0f) {
-        for (m = 0; m < fsk->mode; m++) {
+        for (int m = 0; m < fsk->mode; m++) {
             fsk->f_est[m] = freqs[m];
         }
     }
 
-    /* Initialize downmixers for each symbol tone */
-    for (m = 0; m < fsk->mode; m++) {
-        /* Back the stored phase off to account for re-integraton of old samples */
-        dphi[m] = cmplx(-TAU * (fsk->Nmem - fsk->nin - (fsk->Ts / fsk->P)) * (freqs[m] / (float) fsk->Fs));
-        fsk->phase[m] = fsk->phase[m] * dphi[m];
+    float period = (fsk->Ts / fsk->P);
+    
+    /* Initialize down-mixers for each symbol tone */
+    for (int m = 0; m < fsk->mode; m++) {
+        float tval = (freqs[m] / (float) fsk->Fs);
+        
+        /* Figure out how much to nudge each sample down-mixer for every sample */
+        dphi[m] = cmplx(TAU * tval);
 
-        /* Figure out how much to nudge each sample downmixer for every sample */
-        dphi[m] = cmplx(TAU * (freqs[m] / (float) fsk->Fs));
+        /* Back the stored phase off to account for re-integration of old samples */
+        fsk->phase[m] *= cmplx(-TAU * (fsk->Nmem - fsk->nin - period) * tval);
     }
 
-    /* Integrate and downsample for symbol tones */
-    for (m = 0; m < fsk->mode; m++) {
-        /* Copy buffer pointers in to avoid second buffer indirection */
-        float f_est_m = freqs[m];
+    /* Integrate and down-sample for symbol tones */
+    for (int m = 0; m < fsk->mode; m++) {
         complex float *f_int_m = &(f_int[m][0]);
-        complex float dphi_m = dphi[m];
 
-        dc_i = 0;
-        cbuf_i = 0;
+        int dc_i = 0;
+        int cbuf_i = 0;
         sample_src = &(fsk->samp_old[fsk->nstash - nold]);
-        using_old_samps = 1;
+        using_old_samps = true;
 
         /* Pre-fill integration buffer */
-        for (dc_i = 0; dc_i < fsk->Ts - (fsk->Ts / fsk->P); dc_i++) {
+        for (dc_i = 0; dc_i < fsk->Ts - period; dc_i++) {
             /* Switch sample source to new samples when we run out of old ones */
             if (dc_i >= nold && using_old_samps) {
                 sample_src = &fsk_in[0];
                 dc_i = 0;
-                using_old_samps = 0;
+                using_old_samps = false;
 
                 /* Recalculate delta-phi after switching to new sample source */
-                fsk->phase[m] = fsk->phase[m] / cabsf(fsk->phase[m]);
-                dphi_m = cmplx(TAU * (f_est_m / (float) fsk->Fs));
+                fsk->phase[m] /= cabsf(fsk->phase[m]);
             }
 
-            /* Downconvert and place into integration buffer */
+            /* Down-convert and place into integration buffer */
             f_intbuf[dc_i] = sample_src[dc_i] * conjf(fsk->phase[m]);
 
-            /* Spin downconversion phases */
-            fsk->phase[m] = fsk->phase[m] * dphi_m;
+            /* Spin down-conversion phases */
+            fsk->phase[m] *= dphi[m];
         }
 
         cbuf_i = dc_i;
 
         /* Integrate over Ts at offsets of Ts/P */
-        for (i = 0; i < ((fsk->Nsym + 1) * fsk->P); i++) {
-            /* Downconvert and Place Ts/P samples in the integration buffers */
-            for (j = 0; j < (fsk->Ts / fsk->P); j++, dc_i++) {
+        for (int i = 0; i < ((fsk->Nsym + 1) * fsk->P); i++) {
+            /* Down-convert and Place Ts/P samples in the integration buffers */
+            for (int j = 0; j < (fsk->Ts / fsk->P); j++, dc_i++) {
                 /* Switch sample source to new samples when we run out of old ones */
                 if (dc_i >= nold && using_old_samps) {
                     sample_src = &fsk_in[0];
                     dc_i = 0;
-                    using_old_samps = 0;
+                    using_old_samps = false;
 
                     /* Recalculate delta-phi after switching to new sample source */
-                    fsk->phase[m] = fsk->phase[m] / cabsf(fsk->phase[m]);
-                    dphi_m = cmplx(TAU * (f_est_m / (float) fsk->Fs));
+                    fsk->phase[m] /= cabsf(fsk->phase[m]);
                 }
 
-                /* Downconvert and place into integration buffer */
+                /* Down-convert and place into integration buffer */
                 f_intbuf[cbuf_i + j] = sample_src[dc_i] * conjf(fsk->phase[m]);
 
-                /* Spin downconversion phases */
-                fsk->phase[m] = fsk->phase[m] * dphi_m;
+                /* Spin down-conversion phases */
+                fsk->phase[m] *= dphi[m];
             }
 
             /* Dump internal samples */
-            cbuf_i = cbuf_i + (fsk->Ts / fsk->P);
+            cbuf_i += period;
 
             if (cbuf_i >= fsk->Ts)
                 cbuf_i = 0;
@@ -144,8 +131,8 @@ static void demodulate(struct FSK *fsk, uint8_t rx_bits[], float rx_sd[], comple
             /* Integrate over the integration buffers, save samples */
             complex float it = 0.0f;
 
-            for (j = 0; j < fsk->Ts; j++) {
-                it = it + f_intbuf[j];
+            for (int j = 0; j < fsk->Ts; j++) {
+                it += f_intbuf[j];
             }
 
             f_int_m[i] = it;
@@ -164,11 +151,10 @@ static void demodulate(struct FSK *fsk, uint8_t rx_bits[], float rx_sd[], comple
     complex float phi_ft = cmplx(0.0f);
     complex float t_c = 0.0f;
 
-    for (i = 0; i < ((fsk->Nsym + 1) * fsk->P); i++) {
-        /* Get abs^2 of fx_int[i], and add 'em */
+    for (int i = 0; i < ((fsk->Nsym + 1) * fsk->P); i++) {
         float ft1 = 0.0f;
 
-        for (m = 0; m < fsk->mode; m++) {
+        for (int m = 0; m < fsk->mode; m++) {
             ft1 += normf(f_int[m][i]);
         }
 
@@ -176,7 +162,7 @@ static void demodulate(struct FSK *fsk, uint8_t rx_bits[], float rx_sd[], comple
         t_c += (ft1 * phi_ft);
 
         /* Spin the oscillator for the magic line shift */
-        phi_ft = phi_ft * dphift;
+        phi_ft *= dphift;
     }
 
     /* Check for NaNs in the fine timing estimate, return if found */
@@ -227,23 +213,20 @@ static void demodulate(struct FSK *fsk, uint8_t rx_bits[], float rx_sd[], comple
     float mean_ebno = 0.0f;
     float std_ebno = 0.0f;
 
-    /* FINALLY, THE BITS */
-    /* also, resample fx_int */
-    for (i = 0; i < fsk->Nsym; i++) {
+    for (int i = 0; i < fsk->Nsym; i++) {
         int st = (i + 1) * fsk->P;
 
-        for (m = 0; m < fsk->mode; m++) {
+        for (int m = 0; m < fsk->mode; m++) {
             t[m] = (1.0f - fract) * f_int[m][st + low_sample];
             t[m] = t[m] + (fract * f_int[m][st + high_sample]);
 
-            /* Figure mag^2 of each resampled fx_int */
             tmax[m] = normf(t[m]);
         }
 
         float max = tmax[0]; /* Maximum for figuring correct symbol */
         int sym = 0; /* Index of maximum */
 
-        for (m = 0; m < fsk->mode; m++) {
+        for (int m = 0; m < fsk->mode; m++) {
             if (tmax[m] > max) {
                 max = tmax[m];
                 sym = m;
@@ -262,45 +245,18 @@ static void demodulate(struct FSK *fsk, uint8_t rx_bits[], float rx_sd[], comple
             }
         }
 
-        /* Produce soft decision symbols */
-        if (rx_sd != NULL) {
-            /* Convert symbols from max^2 into max */
-            for (m = 0; m < fsk->mode; m++) {
-                tmax[m] = sqrtf(tmax[m]);
-            }
-
-            if (fsk->mode == MODE_2FSK) {
-                rx_sd[i] = tmax[0] - tmax[1];
-            } else if (fsk->mode == MODE_4FSK) {
-                rx_sd[(i * 2) + 1] = -tmax[0]; /* Bits=00 */
-                rx_sd[(i * 2) ] = -tmax[0];
-
-                rx_sd[(i * 2) + 1] += tmax[1]; /* Bits=01 */
-                rx_sd[(i * 2) ] += -tmax[1];
-                rx_sd[(i * 2) + 1] += -tmax[2]; /* Bits=10 */
-                rx_sd[(i * 2) ] += tmax[2];
-                rx_sd[(i * 2) + 1] += tmax[3]; /* Bits=11 */
-                rx_sd[(i * 2) ] += tmax[3];
-            }
-        }
-
         /* Accumulate resampled int magnitude for EbNodB estimation */
-        /* Standard deviation is calculated by algorithm devised by crafty soviets */
-        /* Accumulate the square of the sampled value */
         std_ebno += max;
 
         /* Figure the abs value of the max tone */
         mean_ebno += sqrtf(max);
-
-        /* Soft output goes here */
     }
 
     /* Calculate mean for EbNo dB estimation */
-    mean_ebno = mean_ebno / (float) fsk->Nsym;
+    mean_ebno /= (float) fsk->Nsym;
 
     /* Calculate the std. dev for EbNo dB estimate */
-    std_ebno = (std_ebno / (float) fsk->Nsym) - (mean_ebno * mean_ebno);
-    std_ebno = sqrt(std_ebno);
+    std_ebno = sqrtf((std_ebno / (float) fsk->Nsym) - (mean_ebno * mean_ebno));
 
     fsk->EbNodB = -6.0f + (20.0f * log10f((1e-6f + mean_ebno) / (1e-6f + std_ebno)));
 
@@ -318,7 +274,7 @@ static void demodulate(struct FSK *fsk, uint8_t rx_bits[], float rx_sd[], comple
 
     stats_set_foff(fsk->stats, rx_center - rx_est_avg);
 
-    for (m = 0; m < fsk->mode; m++) {
+    for (int m = 0; m < fsk->mode; m++) {
         free(f_int[m]);
     }
 }
@@ -412,7 +368,7 @@ static void frequency_estimate(struct FSK *fsk, complex float fsk_in[], float fr
         f_max = (f_max > fsk->Ndft) ? fsk->Ndft : f_max;
 
         for (j = f_min; j < f_max; j++) {
-            fftout[j] = crealf(fftout[j]);
+            fftout[j] = crealf(fftout[j]) + 0.0f * I;
         }
 
         /* Stick the freq index on the list */

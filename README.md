@@ -31,8 +31,6 @@ In 4FSK this results in a 00-bits producing 1100 Hz, 01-bits producing 1300 Hz, 
 
 <img src="https://raw.githubusercontent.com/srsampson/mFSK/master/4fsk.png" width="400">
 
-Just for kicks I added a Manchester Modulator option. I don't have a demodulator, but I was interested in seeing what the spectrum looked like.
-
 #### Project Development
 Currently the modem compiles without error, and the modulator/demodulator seems to work.
 
@@ -130,7 +128,6 @@ void fsk_set_estimators(struct FSK *);
 struct MODULATE *mod_create(int, int, int, int, int);
 void mod_destroy(struct MODULATE *);
 void modulate(struct MODULATE *, complex float [], int);
-void manchester_modulate(struct MODULATE *, complex float [], int);
 ```
 #### Demodulate
 ```

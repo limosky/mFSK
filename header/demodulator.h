@@ -19,7 +19,6 @@ extern "C" {
 #include <complex.h>
     
 void fsk_demod(struct FSK *, uint8_t [], complex float []);
-void fsk_demod_sd(struct FSK *, float [], complex float []);
 
 #ifdef __cplusplus
 }

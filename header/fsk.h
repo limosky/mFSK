@@ -30,7 +30,7 @@ extern "C" {
     
 #define OVERSAMPLE_RATE    8
 #define MIN_FREQUENCY    300
-#define MAX_FREQUENCY   2200
+#define MAX_FREQUENCY   2800
 #define MIN_SPACING      100
 
 #define cmplx(value) (cosf(value) + sinf(value) * I)

@@ -33,7 +33,6 @@ struct MODULATE {
 struct MODULATE *mod_create(int, int, int, int, int);
 void mod_destroy(struct MODULATE *);
 void modulate(struct MODULATE *, complex float [], int);
-void manchester_modulate(struct MODULATE *, complex float [], int);
 
 #ifdef __cplusplus
 }
