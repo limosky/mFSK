@@ -1,5 +1,5 @@
 ### mFSK Modem
-A 2FSK and 4FSK Modem based on the FSK Modem designed by David Rowe. I have changed it to a Dynamic Library. I'm using the Netbeans IDE and have included the export so you can import and compile any changes. You can also just burst the ZIP's (for example on a Raspberry Pi) and type ```make```.
+An M-ary 2FSK and 4FSK Modem based on the FSK Modem designed by David Rowe. I have changed it to a Dynamic Library. I'm using the Netbeans IDE and have included the export so you can import and compile any changes. You can also just burst the ZIP's (for example on a Raspberry Pi) and type ```make```.
 
 #### Build Instructions
 First copy the ```libfsk.so``` file to ```/usr/local/lib``` Make sure the permissions are set correctly (644).
